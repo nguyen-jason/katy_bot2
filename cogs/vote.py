@@ -23,7 +23,8 @@ class Vote(commands.Cog):
 
         # find if we're looking at the question or the emoji
         for i in args:
-            # if we're looking at the question, then add it to the question str
+            # strip leading and trailing characters and check if the word is alphanumeric
+            # this mostly works for what we want, but there are still some bugs with it
             if i.strip(self.special_char).isalnum():
                 question += i + ' '
             # else if emoji, add to reactions list
@@ -54,7 +55,7 @@ class Vote(commands.Cog):
 
 
         # sleep for some time
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
 
         # get reaction results from the original embed
         reactions = (await ctx.channel.fetch_message(react_message.id)).reactions
