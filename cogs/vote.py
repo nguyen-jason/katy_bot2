@@ -1,11 +1,19 @@
 import discord
 from discord.ext import commands
-import aiohttp
+
+# these imports are no longer necessary
+#import aiohttp
 import asyncio
 
 
 def setup(bot):
     bot.add_cog(Vote(bot))
+
+class ConvertEmoji(commands.EmojiConverter):
+    async def convert(self, ctx, argument):
+        emoji = await super().convert(ctx,argument)
+        return(emoji)
+
 
 class Vote(commands.Cog):
     def __init__(self, bot):
@@ -14,7 +22,7 @@ class Vote(commands.Cog):
         # everytime we call callvote()
         self.special_char = '''!"#$%&'()*+,-./:;<=>?@[\]^_`{}|~'''
 
-        self.session = aiohttp.ClientSession(loop=bot.loop)
+        #self.session = aiohttp.ClientSession(loop=bot.loop)
         self.bot = bot
         print('Cog "{}" loaded.'.format(self.__class__.__name__))
 
@@ -22,8 +30,9 @@ class Vote(commands.Cog):
     @commands.command()
     async def callvote(self, ctx, *args):
         """{question} *{emojis}"""
-        question = 'VOTE: '
+        question = 'vote: '
         reactions = []
+
 
         # find if we're looking at the question or the emoji
         # supplying for user error, doing a little extra to cut out the kinks
@@ -33,12 +42,23 @@ class Vote(commands.Cog):
                 question += i + ' '
             # else if we're looking at an emoji, then add it to the reactions list
             else:
-                reactions.append(i)
+                print('appending', i)
+                print('print ctx', ctx)
+                emoji = commands.EmojiConverter().convert(self, ctx = ctx, argument = i)
+                reactions.append(emoji)
+                
+
+        print("\n\nprinting reactions")
+        for i in reactions:
+            print(i)
 
         # https://gist.github.com/Vexs/f2c1bfd6bda68a661a71accd300d2adc
         # create a discord.Embed object to nicely create a voting poll
-        embed = discord.Embed(title = question, description = ' '.join(reactions))
+        #embed = discord.Embed(title = question, description = ' '.join(reactions))
+        embed = discord.Embed(title = question, description = 'a description')
         embed.color = 14423100
+
+        # migrating to v1
         #react_message = await self.bot.say(embed=embed)
         react_message = await ctx.send(embed=embed)
 
@@ -48,14 +68,25 @@ class Vote(commands.Cog):
 
             #await self.bot.add_reaction(react_message, reaction)
             # migrating to v1
-            await discord.Message.add_reaction(react_message, reaction)
+            
+            print('adding reaction to message:', reaction)
+
+            try:
+                #await discord.Message.add_reaction(react_message, reaction)
+                await react_message.add_reaction(reaction)
+            #except discord.HTTPException:
+            except:
+                print("HTTP exception occurred")
+                #await react_message.add_reaction('<:python3:232720527448342530>')
+
+
 
         # give the embed a poll id inside of the footer, so users know which poll this is
         embed.set_footer(text='Poll ID: {}'.format(react_message.id))
 
         #await self.bot.edit_message(react_message, embed=embed)
         # migrating to v1
-        await discord.Message.edit(react_message, embed=embed)
+        await react_message.edit(embed=embed)
 
 
         # sleep for a little for reactions to be made
